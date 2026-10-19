@@ -31,7 +31,6 @@ class _SplashPageState extends State<SplashPage> {
               TextSpan(
                 text: 'Integra',
                 style: TextStyle(
-                  fontFamily: kFont,
                   color: Colors.white,
                   fontSize: 36,
                   fontWeight: FontWeight.w900,
@@ -41,7 +40,6 @@ class _SplashPageState extends State<SplashPage> {
               TextSpan(
                 text: '+',
                 style: TextStyle(
-                  fontFamily: kFont,
                   color: Color(0xFFFF3131),
                   fontSize: 36,
                   fontWeight: FontWeight.w900,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../data/api_client.dart';
+import '../data/auth_repository.dart';
 import 'cadastro_page.dart';
+import 'home_page.dart';
 
 const Color kPrimary = Color(0xFF900C00);
 const Color kPanel = Color(0xFFEBEBEB);
@@ -18,23 +22,53 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _userController = TextEditingController();
   final _emailController = TextEditingController();
+  final _rmController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
+  bool _loading = false;
 
   @override
   void dispose() {
-    _userController.dispose();
     _emailController.dispose();
+    _rmController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _login() {
-    // TODO: integrar com o auth_repository.dart
-    debugPrint('Usuário: ${_userController.text}');
-    debugPrint('Email: ${_emailController.text}');
+  void _mostrarMensagem(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final rm = _rmController.text.trim();
+    final senha = _passwordController.text;
+
+    if (email.isEmpty || rm.isEmpty || senha.isEmpty) {
+      _mostrarMensagem('Preencha email, RM e senha.');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await AuthRepository.instance.login(
+        email: email,
+        rm: rm,
+        senha: senha,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } on ApiException catch (e) {
+      _mostrarMensagem(e.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -73,16 +107,17 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 48),
                     _InputField(
-                      controller: _userController,
-                      hint: 'Usuário',
-                      icon: Icons.person,
-                    ),
-                    const SizedBox(height: 12),
-                    _InputField(
                       controller: _emailController,
                       hint: 'Email',
                       icon: Icons.mail_outline,
                       keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 12),
+                    _InputField(
+                      controller: _rmController,
+                      hint: 'RM (Registro de Matrícula)',
+                      icon: Icons.badge_outlined,
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
                     _InputField(
@@ -115,23 +150,33 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: _login,
+                        onPressed: _loading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimary,
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: kPrimary.withOpacity(0.7),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Entrar',
-                          style: TextStyle(
-                            fontFamily: kFont,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Entrar',
+                                style: TextStyle(
+                                  fontFamily: kFont,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 12),
